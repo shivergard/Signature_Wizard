@@ -12,7 +12,8 @@ $(document).ready(function () {
         addSignature($(this).attr('id'));
     });
 });
-function addSignature(dialogue_id) {   
+function addSignature(dialogue_id) { 
+    console.log('add signature');  
 
     // Get the email selected by the user
     var id = dialogue_id.replace( /(:|\.|\[|\]|,)/g, "\\$1" );
@@ -24,15 +25,25 @@ function addSignature(dialogue_id) {
         var url = null;
         var data = obj.data;
         var messageBody = 'div[aria-label="Message Body"]';
+        
+
         $(data).each(function (i, v) {
             if (v.email == email) {
                 url = v.url;
             }
-        });     
+        }); 
+
+        var messageTo = 'div[aria-label="To]';  
+        var emailList = [];
+
+        $(data).each(function (i, v) {
+            emailList[emailList.length] = $(v).html();
+        }); 
+
         if(url === null) {   
 
             // If no signature URL set remove any existing one
-            $('#' + id + ' ' + messageBody + ' *[align="gm-signature"]').remove();
+            $('#' + id + ' ' + messageBody + ' *[align="gm-signature"]').html('mi-mi-mi');
             $('#' + id + ' ' + messageBody + ' *[align="gm-signature-br"]').remove();
 
         } else {           
@@ -49,10 +60,17 @@ function addSignature(dialogue_id) {
 
             // If signature container marked as not set add 'loading' styles and fetch signature from URL
             if($('#' + id + ' ' + messageBody + ' *[align="gm-signature"][width="gm-set"]').length === 0){
-                $('#' + id + ' ' + messageBody + ' *[align="gm-signature"]').attr('height', 'gm-loading').load(url, function(){
-                    $('#' + id + ' ' + messageBody + ' *[align="gm-signature"]').removeAttr('height', 'gm-loading').attr('width', 'gm-set');
+
+                chrome.runtime.sendMessage({url: url , mail_to: emailList }, 
+                    function(response) {
+                        if (response.status){
+
+                            $('#' + id + ' ' + messageBody + ' *[align="gm-signature"]').attr('height', 'gm-loading').html(response.content);
+                            $('#' + id + ' ' + messageBody + ' *[align="gm-signature"]').removeAttr('height', 'gm-loading').attr('width', 'gm-set');
+                            
+                            window.gmLastUrl = url;
+                        }
                 });
-                window.gmLastUrl = url;
             }
 
         }
